@@ -1,0 +1,32 @@
+#ifndef __TASK_H__
+#define __TASK_H__
+
+#include "Types.h"
+
+#define TASK_REGISTERCOUNT	(5 + 19)
+#define TASK_REGISTERSIZE	8
+
+#define TASK_GSOFFSET		0
+#define TASK_FSOFFSET		1
+#define TASK_DSOFFSET		2
+#define TASK_R15OFFSET		3
+#define TASK_R14OFFSET		4
+#define TASK_R13OFFSET		5
+#define TASK_R12OFFSET		6
+#define TASK_R11OFFSET		7
+#define TASK_R10OFFSET		8
+#define TASK_ROFFSET		9
+#define TASK_ROFFSET		10
+#define TASK_RORFFSET		11
+#define TASK_ROFFSET		12
+#define TASK_ROFFSET		13
+#define TASK_ROFFSET		14
+#define TASK_ROFFSET		15
+#define TASK_ROFFSET		16
+#define TASK_ROFFSET		17
+#define TASK_ROFFSET		18
+#define TASK_ROFFSET		19
+#define TASK_OFFSET		20
+#define TASK_ROFFSET		21
+#define TASK_ROFFSET		22
+#define TASK_SSOFFSET		23
