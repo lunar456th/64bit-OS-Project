@@ -1,4 +1,5 @@
 #include "RTC.h"
+#include "AssemblyUtility.h"
 
 // CMOS 메모리에 저장한 현재 시간값을 읽음
 void kReadRTCTime(BYTE * pbHour, BYTE * pbMinute, BYTE * pbSecond)

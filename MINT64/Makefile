@@ -1,4 +1,4 @@
-dir=/home/sj/eclipse-workspace/MINT64
+dir=/home/sj/git/MINT64
 img=Disk.img
 
 all: BootLoader Kernel32 Kernel64 Utility Disk.img

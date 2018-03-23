@@ -98,7 +98,7 @@ int AdjustInSectorSize(int iFd, int iSourceSize)
 	if(iAdjustSizeToSector != 0)
 	{
 		iAdjustSizeToSector = 512 - iAdjustSizeToSector;
-		printf("[INFO] File size [%lu] and fill [%u] byte\n", iSourceSize, iAdjustSizeToSector);
+		printf("[INFO] File size [%d] and fill [%d] byte\n", iSourceSize, iAdjustSizeToSector);
 		for(i = 0; i < iAdjustSizeToSector; i++)
 		{
 			write(iFd, &cCh, 1);
@@ -121,7 +121,7 @@ void WriteKernelInformation(int iTargetFd, int iTotalKernelSectorCount, int iKer
 	lPosition = lseek(iTargetFd, 5, SEEK_SET);
 	if(lPosition == -1)
 	{
-		fprintf(stderr, "lseek fail, Return value = %d, errno = %d, %d\n", lPosition, errno, SEEK_SET);
+		fprintf(stderr, "lseek fail, Return value = %ld, errno = %d, %d\n", lPosition, errno, SEEK_SET);
 		exit(-1);
 	}
 	usData = (unsigned short)iTotalKernelSectorCount;
