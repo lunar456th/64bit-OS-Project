@@ -2,6 +2,9 @@
 #include "PIC.h"
 #include "Keyboard.h"
 #include "Console.h"
+#include "Utility.h"
+#include "Task.h"
+#include "Descriptor.h"
 
 // 공통 예외 핸들러
 void kCommonExceptionHandler(int iVectorNumber, QWORD qwErrorCode)
@@ -60,5 +63,30 @@ void kKeyboardHandler(int iVectorNumber)
 
 	// EOI 전송
 	kSendEOIToPIC(iVectorNumber - PIC_IRQSTARTVECTOR);
+}
+
+// 타이머 인터럽트 핸들러
+void kTimerHandler(int iVectorNumber)
+{
+	char vcBuffer[] = "[INT:  , ]";
+	static int g_iTimerInterruptCount = 0;
+	BYTE bTemp;
+
+	vcBuffer[5] = '0' + iVectorNumber / 10;
+	vcBuffer[6] = '0' + iVectorNumber % 10;
+
+	vcBuffer[8] = '0' + g_iTimerInterruptCount;
+	g_iTimerInterruptCount = (g_iTimerInterruptCount + 1) % 10;
+	kPrintStringXY(70, 0, vcBuffer);
+
+	kSendEOIToPIC(iVectorNumber - PIC_IRQSTARTVECTOR);
+
+	g_qwTickCount++; // 타이머 발생 횟수 증가
+
+	kDecreaseProcessorTime();
+	if(kIsProcessorTimeExpired() == TRUE)
+	{
+		kScheduleInInterrupt();
+	}
 }
 

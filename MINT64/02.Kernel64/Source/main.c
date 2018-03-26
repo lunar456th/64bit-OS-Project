@@ -4,6 +4,8 @@
 #include "PIC.h"
 #include "Console.h"
 #include "ConsoleShell.h"
+#include "Task.h"
+#include "PIT.h"
 
 
 //void kPrintString(int iX, int iY, const char * pcString); // print string
@@ -45,7 +47,12 @@ void main(void)
 	kPrintf("Total RAM Size Check........................[    ]");
 	kCheckTotalRAMSize();
 	kSetCursor(45, iCursorY++);
-	kPrintf("Pass\n");
+	kPrintf("Pass], Size = %d MB\n", kGetTotalRAMSize());
+
+	kPrintf("TCB Pool And Scheduler Initialize...........[Pass]\n");
+	iCursorY++;
+	kInitializeScheduler();
+	kInitializePIT(MSTOCOUNT(1), 1);
 
 	kPrintf("Keyboard Activate And Queue Initialize......[    ]");
 	// 키보드 활성화

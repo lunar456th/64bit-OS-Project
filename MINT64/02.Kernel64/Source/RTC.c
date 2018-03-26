@@ -23,7 +23,7 @@ void kReadRTCTime(BYTE * pbHour, BYTE * pbMinute, BYTE * pbSecond)
 }
 
 // CMOS 메모리에 저장한 현재 날짜값을 읽음
-void kReadRTCDate(WORD * pwYear, WORD * pwMonth, WORD * pwDayOfMonth, BYTE * pbDayOfWeek)
+void kReadRTCDate(WORD * pwYear, BYTE * pwMonth, BYTE * pwDayOfMonth, BYTE * pbDayOfWeek)
 {
 	WORD bData;
 

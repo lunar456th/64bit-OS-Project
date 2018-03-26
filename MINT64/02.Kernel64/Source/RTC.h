@@ -18,7 +18,7 @@
 
 // functions
 void kReadRTCTime(BYTE * pbHour, BYTE * pbMinute, BYTE * pbSecond);
-void kReadRTCDate(WORD * pwYear, WORD * pwMonth, WORD * pwDayOfMonth, BYTE * pbDayOfWeek);
+void kReadRTCDate(WORD * pwYear, BYTE * pwMonth, BYTE * pwDayOfMonth, BYTE * pbDayOfWeek);
 char * kConvertDayOfWeekToString(BYTE bDayOfWeek);
 
 
