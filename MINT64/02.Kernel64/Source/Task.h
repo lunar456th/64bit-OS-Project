@@ -35,7 +35,7 @@
 #define TASK_TCBPOOLADDRESS			0x800000
 #define TASK_MAXCOUNT				1024
 
-#define TASK_STACKPOOLADDRESS		(TASK_TCBPOOLADDRESS + sizeof(TCB) * TASK_MAXCOUNT)
+#define TASK_STACKPOOLADDRESS   	(TASK_TCBPOOLADDRESS + sizeof(TCB) * TASK_MAXCOUNT)
 #define TASK_STACKSIZE				8192
 
 #define TASK_INVALIDID				0xFFFFFFFFFFFFFFFF
@@ -55,7 +55,7 @@
 #define TASK_FLAGS_IDLE				0x0800000000000000
 
 #define GETPRIORITY(x)				((x) & 0xFF)
-#define SETPRIORITY(x, priority) 	((x) = ((x) & 0xFFFFFFFFFFFFFF00) | (priority))
+#define SETPRIORITY(x, priority)	((x) = ((x) & 0xFFFFFFFFFFFFFF00) | (priority))
 #define GETTCBOFFSET(x)				((x) & 0xFFFFFFFF)
 
 #pragma pack(push, 1)
@@ -68,8 +68,11 @@ typedef struct kContextStruct
 typedef struct kTaskControlBlockStruct
 {
 	LISTLINK stLink;
+
 	QWORD qwFlags;
+
 	CONTEXT stContext;
+
 	void * pvStackAddress;
 	QWORD qwStackSize;
 }TCB;
@@ -79,17 +82,24 @@ typedef struct kTCBPoolManagerStruct
 	TCB * pstStartAddress;
 	int iMaxCount;
 	int iUseCount;
+
 	int iAllocatedCount;
 }TCBPOOLMANAGER;
 
 typedef struct kSchedulerStruct
 {
 	TCB * pstRunningTask;
+
 	int iProcessorTime;
+
 	LIST vstReadyList[TASK_MAXREADYLISTCOUNT];
+
 	LIST stWaitList;
+
 	int viExecuteCount[TASK_MAXREADYLISTCOUNT];
+
 	QWORD qwProcessorLoad;
+
 	QWORD qwSpendProcessorTimeInIdleTask;
 }SCHEDULER;
 
@@ -98,22 +108,22 @@ typedef struct kSchedulerStruct
 
 // functions
 
-void kInitializeTCBPool(void);
-TCB * kAllocateTCB(void);
-void kFreeTCB(QWORD qwID);
+static void kInitializeTCBPool(void);
+static TCB * kAllocateTCB(void);
+static void kFreeTCB(QWORD qwID);
 TCB * kCreateTask(QWORD qwFlags, QWORD qwEntryPointAddress);
-void kSetUpTask(TCB * pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress,	void * pvStackAddress, QWORD qwStackSize);
+static void kSetUpTask(TCB * pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress, void * pvStackAddress, QWORD qwStackSize);
 
 void kInitializeScheduler(void);
 void kSetRunningTask(TCB * pstTask);
 TCB * kGetRunningTask(void);
-TCB * kGetNextTaskToRun(void);
-BOOL kAddTaskToReadyList(TCB * pstTask);
+static TCB * kGetNextTaskToRun(void);
+static BOOL kAddTaskToReadyList(TCB * pstTask);
 void kSchedule(void);
 BOOL kScheduleInInterrupt(void);
 void kDecreaseProcessorTime(void);
 BOOL kIsProcessorTimeExpired(void);
-TCB * kRemoveTaskFromReadyList(QWORD qwTaskID);
+static TCB * kRemoveTaskFromReadyList(QWORD qwTaskID);
 BOOL kChangePriority(QWORD qwID, BYTE bPriority);
 BOOL kEndTask(QWORD qwTaskID);
 void kExitTask(void);

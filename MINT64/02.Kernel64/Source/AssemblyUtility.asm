@@ -5,7 +5,7 @@ SECTION .text
 global kInPortByte, kOutPortByte, kLoadGDTR, kLoadTR, kLoadIDTR
 global kEnableInterrupt, kDisableInterrupt, kReadRFLAGS
 global kReadTSC
-global kSwitchContext, kHlt
+global kSwitchContext, kHlt, kTestAndSet
 
 kInPortByte:
 	push rdx
@@ -20,6 +20,7 @@ kInPortByte:
 kOutPortByte:
 	push rdx
 	push rax
+
 	mov rdx, rdi
 	mov rax, rsi
 	out dx, al
@@ -30,14 +31,17 @@ kOutPortByte:
 
 kLoadGDTR:
 	lgdt [rdi]
+
 	ret
 
 kLoadTR:
 	ltr di
+
 	ret
 
 kLoadIDTR:
 	lidt [rdi]
+
 	ret
 
 kEnableInterrupt:
@@ -56,7 +60,9 @@ kReadRFLAGS:
 
 kReadTSC:
 	push rdx
+
 	rdtsc
+
 	shl rdx, 32
 	or rax, rdx
 
@@ -80,6 +86,7 @@ kReadTSC:
 	push r13
 	push r14
 	push r15
+
 	mov ax, ds
 	push rax
 	mov ax, es
@@ -96,6 +103,7 @@ kReadTSC:
 	mov es, ax
 	pop rax
 	mov ds, ax
+
 	pop r15
 	pop r14
 	pop r13
@@ -130,6 +138,7 @@ kSwitchContext:
 	mov rax, rbp
 	add rax, 16
 	mov qword[rdi + (22 * 8)], rax
+
 	pushfq
 	pop rax
 	mov qword[rdi + (21 * 8)], rax
@@ -149,7 +158,6 @@ kSwitchContext:
 
 	KSAVECONTEXT
 
-
 .LoadContext:
 	mov rsp, rsi
 
@@ -161,3 +169,16 @@ kHlt:
 	hlt
 	ret
 
+kTestAndSet:
+	mov rax, rsi
+
+	lock cmpxchg byte [rdi], dl
+	je .SUCCESS
+
+.NOTSAME:
+	mov rax, 0x00
+	ret
+
+.SUCCESS:
+	mov rax, 0x01
+	ret
