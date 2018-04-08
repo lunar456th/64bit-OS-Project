@@ -2,28 +2,27 @@
 
 SECTION .text
 
-global kInPortByte, kOutPortByte, kLoadGDTR, kLoadTR, kLoadIDTR ; C언어에서 이 함수들을 쓸 수 있게끔 global해줌
+global kInPortByte, kOutPortByte, kLoadGDTR, kLoadTR, kLoadIDTR
 global kEnableInterrupt, kDisableInterrupt, kReadRFLAGS
 global kReadTSC
-global kSwitchContext
+global kSwitchContext, kHlt
 
-kInPortByte: ; param - rdi = 파라미터로 port주소를 받아서 갖고 있음
-	push rdx ; save rdx to use rdx in this function
-
-	mov rdx, rdi ; rdx <- portnumber
-	mov rax, 0 ; init rax
-	in al, dx ; dx레지스터에 저장된 포트 주소에서 한바이트를 읽어서 AL에 저장.
-
-	pop rdx ; restore
-	ret
-
-kOutPortByte: ; param - rdi = parameter1(port), rsi = parameter2(data)
+kInPortByte:
 	push rdx
-	push rax
 
 	mov rdx, rdi
+	mov rax, 0
+	in al, dx
+
+	pop rdx
+	ret
+
+kOutPortByte:
+	push rdx
+	push rax
+	mov rdx, rdi
 	mov rax, rsi
-	out dx, al ; al -> [dx]
+	out dx, al
 
 	pop rax
 	pop rdx
@@ -58,14 +57,14 @@ kReadRFLAGS:
 kReadTSC:
 	push rdx
 	rdtsc
-
 	shl rdx, 32
 	or rax, rdx
 
 	pop rdx
 	ret
 
-%macro KSAVECONTEXT 0 ; 컨텍스트 저장 과정
+%macro KSAVECONTEXT 0
+
 	push rbp
 	push rax
 	push rbx
@@ -81,7 +80,6 @@ kReadTSC:
 	push r13
 	push r14
 	push r15
-
 	mov ax, ds
 	push rax
 	mov ax, es
@@ -90,14 +88,14 @@ kReadTSC:
 	push gs
 %endmacro
 
-%macro KLOADCONTEXT 0 ; 컨텍스트 복원 과정
+%macro KLOADCONTEXT 0
+
 	pop gs
 	pop fs
 	pop rax
 	mov es, ax
 	pop rax
 	mov ds, ax
-
 	pop r15
 	pop r14
 	pop r13
@@ -125,13 +123,13 @@ kSwitchContext:
 	popfq
 
 	push rax
-	mov ax, ss ; ss 레지스터 저장
+
+	mov ax, ss
 	mov qword[rdi + (23 * 8)], rax
 
 	mov rax, rbp
 	add rax, 16
 	mov qword[rdi + (22 * 8)], rax
-
 	pushfq
 	pop rax
 	mov qword[rdi + (21 * 8)], rax
@@ -151,9 +149,15 @@ kSwitchContext:
 
 	KSAVECONTEXT
 
+
 .LoadContext:
 	mov rsp, rsi
 
 	KLOADCONTEXT
 	iretq
+
+kHlt:
+	hlt
+	hlt
+	ret
 

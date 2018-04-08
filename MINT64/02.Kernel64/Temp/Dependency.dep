@@ -13,7 +13,8 @@ InterruptHandler.o: ../Source/InterruptHandler.c \
 Descriptor.o: ../Source/Descriptor.c ../Source/Descriptor.h \
  ../Source/Types.h ../Source/Utility.h ../Source/ISR.h
 Console.o: ../Source/Console.c ../Source/Console.h ../Source/Types.h \
- ../Source/Keyboard.h
+ ../Source/Keyboard.h ../Source/AssemblyUtility.h ../Source/Task.h \
+ ../Source/List.h ../Source/Utility.h
 Utility.o: ../Source/Utility.c ../Source/Utility.h ../Source/Types.h \
  ../Source/AssemblyUtility.h ../Source/Task.h ../Source/List.h
 main.o: ../Source/main.c ../Source/Types.h ../Source/Keyboard.h \
@@ -27,4 +28,4 @@ Keyboard.o: ../Source/Keyboard.c ../Source/Types.h \
 RTC.o: ../Source/RTC.c ../Source/RTC.h ../Source/Types.h \
  ../Source/AssemblyUtility.h ../Source/Task.h ../Source/List.h
 Task.o: ../Source/Task.c ../Source/Task.h ../Source/Types.h \
- ../Source/List.h ../Source/Descriptor.h ../Source/Utility.h
+ ../Source/List.h ../Source/Descriptor.h
