@@ -39,7 +39,6 @@ int kMemCmp(const void * pvDestination, const void * pvSource, int iSize)
 			return (int)cTemp;
 		}
 	}
-
 	return 0;
 }
 
@@ -64,14 +63,11 @@ BOOL kSetInterruptFlag(BOOL bEnableInterrupt)
 	return FALSE;
 }
 
-
-// 솔직히 이 밑으로 책보고 작성하는건 진짜 이득 없는 노가다인 것 같아서 소스집에서 코드스타일만 바꿔서 붙임
-
 int kStrLen(const char * pcBuffer)
 {
 	int i;
 
-	for(i = 0; ; i++)
+	for(i = 0;; i++)
 	{
 		if(pcBuffer[i] == '\0')
 		{
@@ -85,30 +81,28 @@ static int gs_qwTotalRAMMBSize = 0;
 
 void kCheckTotalRAMSize(void)
 {
-	DWORD *pdwCurrentAddress;
+	DWORD * pdwCurrentAddress;
 	DWORD dwPreviousValue;
 
-	pdwCurrentAddress = (DWORD *) 0x4000000;
+	pdwCurrentAddress = (DWORD *)0x4000000;
 	while(1)
 	{
-		dwPreviousValue = *pdwCurrentAddress;
-		*pdwCurrentAddress = 0x12345678;
-		if( *pdwCurrentAddress != 0x12345678)
+		dwPreviousValue = * pdwCurrentAddress;
+		 * pdwCurrentAddress = 0x12345678;
+		if(*pdwCurrentAddress != 0x12345678)
 		{
 			break;
 		}
-	   *pdwCurrentAddress = dwPreviousValue;
+		 * pdwCurrentAddress = dwPreviousValue;
 		pdwCurrentAddress += (0x400000 / 4);
 	}
-	gs_qwTotalRAMMBSize = (QWORD) pdwCurrentAddress / 0x100000;
-}
-
+	gs_qwTotalRAMMBSize = (QWORD)pdwCurrentAddress / 0x100000;
+}  
 
 QWORD kGetTotalRAMSize(void)
 {
 	return gs_qwTotalRAMMBSize;
 }
-
 
 long kAToI(const char * pcBuffer, int iRadix)
 {
@@ -128,7 +122,6 @@ long kAToI(const char * pcBuffer, int iRadix)
 	return lReturn;
 }
 
-
 QWORD kHexStringToQword(const char * pcBuffer)
 {
 	QWORD qwValue = 0;
@@ -137,22 +130,21 @@ QWORD kHexStringToQword(const char * pcBuffer)
 	for(i = 0; pcBuffer[i] != '\0'; i++)
 	{
 		qwValue *= 16;
-		if(('A' <= pcBuffer[i]) && (pcBuffer[i] <= 'Z'))
+		if(('A' <= pcBuffer[i])  && (pcBuffer[i] <= 'Z'))
 		{
 			qwValue += (pcBuffer[i] - 'A') + 10;
 		}
-		else if(('a' <= pcBuffer[i]) && (pcBuffer[i] <= 'z'))
+		else if(('a' <= pcBuffer[i])  && (pcBuffer[i] <= 'z'))
 		{
 			qwValue += (pcBuffer[i] - 'a') + 10;
 		}
-		else
+		else 
 		{
 			qwValue += pcBuffer[i] - '0';
 		}
 	}
 	return qwValue;
 }
-
 
 long kDecimalStringToLong(const char * pcBuffer)
 {
@@ -181,7 +173,6 @@ long kDecimalStringToLong(const char * pcBuffer)
 	return lValue;
 }
 
-
 int kIToA(long lValue, char * pcBuffer, int iRadix)
 {
 	int iReturn;
@@ -200,7 +191,6 @@ int kIToA(long lValue, char * pcBuffer, int iRadix)
 
 	return iReturn;
 }
-
 
 int kHexToString(QWORD qwValue, char * pcBuffer)
 {
@@ -233,7 +223,6 @@ int kHexToString(QWORD qwValue, char * pcBuffer)
 	kReverseString(pcBuffer);
 	return i;
 }
-
 
 int kDecimalToString(long lValue, char * pcBuffer)
 {
@@ -276,23 +265,21 @@ int kDecimalToString(long lValue, char * pcBuffer)
 	return i;
 }
 
-
 void kReverseString(char * pcBuffer)
 {
    int iLength;
    int i;
    char cTemp;
-
-
+   
+   
    iLength = kStrLen(pcBuffer);
    for(i = 0; i < iLength / 2; i++)
    {
-	   cTemp = pcBuffer[i];
-	   pcBuffer[i] = pcBuffer[iLength - 1 - i];
-	   pcBuffer[iLength - 1 - i] = cTemp;
+	cTemp = pcBuffer[i];
+	pcBuffer[i] = pcBuffer[iLength - 1 - i];
+	pcBuffer[iLength - 1 - i] = cTemp;
    }
 }
-
 
 int kSPrintf(char * pcBuffer, const char * pcFormatString, ...)
 {
@@ -306,7 +293,6 @@ int kSPrintf(char * pcBuffer, const char * pcFormatString, ...)
 	return iReturn;
 }
 
-
 int kVSPrintf(char * pcBuffer, const char * pcFormatString, va_list ap)
 {
 	QWORD i, j;
@@ -317,12 +303,12 @@ int kVSPrintf(char * pcBuffer, const char * pcFormatString, va_list ap)
 	int iValue;
 
 	iFormatLength = kStrLen(pcFormatString);
-	for(i = 0; i < iFormatLength; i++)
+	for(i = 0; i < iFormatLength; i++) 
 	{
-		if(pcFormatString[i] == '%')
+		if(pcFormatString[i] == '%') 
 		{
 			i++;
-			switch(pcFormatString[i])
+			switch(pcFormatString[i]) 
 			{
 			case 's':
 				pcCopyString = (char *)(va_arg(ap, char *));
@@ -375,4 +361,16 @@ int kVSPrintf(char * pcBuffer, const char * pcFormatString, va_list ap)
 QWORD kGetTickCount(void)
 {
 	return g_qwTickCount;
+}
+
+void kSleep(QWORD qwMillisecond)
+{
+	QWORD qwLastTickCount;
+
+	qwLastTickCount = g_qwTickCount;
+
+	while((g_qwTickCount - qwLastTickCount) <= qwMillisecond)
+	{
+		kSchedule();
+	}
 }

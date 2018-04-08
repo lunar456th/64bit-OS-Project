@@ -3,8 +3,8 @@
 
 #include "Types.h"
 
-#define CONSOLESHELL_MAXCOMMANDBUFFERCOUNT	300
-#define CONSOLESHELL_PROMPTMESSAGE			"MINT64>"
+#define CONSOLESHELL_MAXCOMMANDBUFFERCOUNT  300
+#define CONSOLESHELL_PROMPTMESSAGE		"MINT64>"
 
 typedef void (*CommandFunction) (const char * pcParameter);
 
@@ -24,11 +24,7 @@ typedef struct kParameterListStruct
 	int iCurrentPosition;
 }PARAMETERLIST;
 
-
 #pragma pack(pop)
-
-
-// functions
 
 void kStartConsoleShell(void);
 void kExecuteCommand(const char * pcCommandBuffer);
@@ -51,5 +47,8 @@ static void kShowTaskList(const char * pcParameterBuffer);
 static void kKillTask(const char * pcParameterBuffer);
 static void kCPULoad(const char * pcParameterBuffer);
 static void kTestMutex(const char * pcParameterBuffer);
+static void kCreateThreadTask(void);
+static void kTestThread(const char * pcParameterBuffer);
+static void kShowMatrix(const char * pcParameterBuffer);
 
-#endif
+#endif 

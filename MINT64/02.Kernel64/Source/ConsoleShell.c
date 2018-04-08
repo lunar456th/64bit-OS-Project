@@ -26,6 +26,8 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] =
 		{ "killtask", "End Task, ex)killtask 1(ID) or 0xffffffff(All Task)", kKillTask },
 		{ "cpuload", "Show Processor Load", kCPULoad },
 		{ "testmutex", "Test Mutex Function", kTestMutex },
+		{ "testthread", "Test Thread And Process Function", kTestThread },
+		{ "showmatrix", "Show Matrix Screen", kShowMatrix },
 };
 
 void kStartConsoleShell(void)
@@ -103,9 +105,7 @@ void kExecuteCommand(const char * pcCommandBuffer)
 	for(i = 0; i < iCount; i++)
 	{
 		iCommandLength = kStrLen(gs_vstCommandTable[i].pcCommand);
-		if((iCommandLength == iSpaceIndex) &&
-			(kMemCmp(gs_vstCommandTable[i].pcCommand, pcCommandBuffer,
-					   iSpaceIndex) == 0))
+		if((iCommandLength == iSpaceIndex) && (kMemCmp(gs_vstCommandTable[i].pcCommand, pcCommandBuffer, iSpaceIndex) == 0))
 		{
 			gs_vstCommandTable[i].pfFunction(pcCommandBuffer + iSpaceIndex + 1);
 			break;
@@ -257,7 +257,7 @@ static void kSetTimer(const char * pcParameterBuffer)
 	{
 		kPrintf("ex)settimer 10(ms) 1(periodic)\n");
 		return;
-	}
+	}   
 	bPeriodic = kAToI(vcParameter, 10);
 
 	kInitializePIT(MSTOCOUNT(lValue), bPeriodic);
@@ -287,7 +287,7 @@ static void kWaitUsingPIT(const char * pcParameterBuffer)
 	{
 		kWaitUsingDirectPIT(MSTOCOUNT(30));
 	}
-	kWaitUsingDirectPIT(MSTOCOUNT(lMillisecond % 30));
+	kWaitUsingDirectPIT(MSTOCOUNT(lMillisecond % 30));   
 	kEnableInterrupt();
 	kPrintf("%d ms Sleep Complete\n", lMillisecond);
 
@@ -341,7 +341,7 @@ static void kTestTask1(void)
 {
 	BYTE bData;
 	int i = 0, iX = 0, iY = 0, iMargin, j;
-	CHARACTER * pstScreen = (CHARACTER *) CONSOLE_VIDEOMEMORYADDRESS;
+	CHARACTER * pstScreen = (CHARACTER *)CONSOLE_VIDEOMEMORYADDRESS;
 	TCB * pstRunningTask;
 
 	pstRunningTask = kGetRunningTask();
@@ -390,13 +390,12 @@ static void kTestTask1(void)
 
 	}
 
-	kExitTask();
 }
 
 static void kTestTask2(void)
 {
 	int i = 0, iOffset;
-	CHARACTER * pstScreen = (CHARACTER *) CONSOLE_VIDEOMEMORYADDRESS;
+	CHARACTER * pstScreen = (CHARACTER *)CONSOLE_VIDEOMEMORYADDRESS;
 	TCB * pstRunningTask;
 	char vcData[4] = { '-', '\\', '|', '/' };
 
@@ -429,7 +428,7 @@ static void kCreateTestTask(const char * pcParameterBuffer)
 	case 1:
 		for(i = 0; i < kAToI(vcCount, 10); i++)
 		{
-			if(kCreateTask(TASK_FLAGS_LOW, (QWORD) kTestTask1) == NULL)
+			if(kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)kTestTask1) == NULL)
 			{
 				break;
 			}
@@ -442,15 +441,15 @@ static void kCreateTestTask(const char * pcParameterBuffer)
 	default:
 		for(i = 0; i < kAToI(vcCount, 10); i++)
 		{
-			if(kCreateTask(TASK_FLAGS_LOW, (QWORD) kTestTask2) == NULL)
+			if(kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)kTestTask2) == NULL)
 			{
 				break;
 			}
 		}
 		kPrintf("Task2 %d Created\n", i);
 		break;
-	}
-}
+	}   
+}  
 
 static void kChangeTaskPriority(const char * pcParameterBuffer)
 {
@@ -509,7 +508,8 @@ static void kShowTaskList(const char * pcParameterBuffer)
 				kPrintf("\n");
 			}
 
-			kPrintf("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q]\n", 1 + iCount++, pstTCB->stLink.qwID, GETPRIORITY(pstTCB->qwFlags), pstTCB->qwFlags);
+			kPrintf("[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + iCount++, pstTCB->stLink.qwID, GETPRIORITY(pstTCB->qwFlags), pstTCB->qwFlags, kGetListCount(&(pstTCB->stChildThreadList)));
+			kPrintf("	Parent PID[0x%Q], Memory Address[0x%Q], Size[0x%Q]\n", pstTCB->qwParentProcessID, pstTCB->pvMemoryAddress, pstTCB->qwMemorySize);
 		}
 	}
 }
@@ -536,23 +536,34 @@ static void kKillTask(const char * pcParameterBuffer)
 
 	if(qwID != 0xFFFFFFFF)
 	{
-		kPrintf("Kill Task ID [0x%q] ", qwID);
-		if(kEndTask(qwID) == TRUE)
+		pstTCB = kGetTCBInTCBPool(GETTCBOFFSET(qwID));
+		qwID = pstTCB->stLink.qwID;
+
+		if(((qwID >> 32) != 0) && ((pstTCB->qwFlags & TASK_FLAGS_SYSTEM) == 0x00))
 		{
-			kPrintf("Success\n");
+			kPrintf("Kill Task ID [0x%q] ", qwID);
+			if(kEndTask(qwID) == TRUE)
+			{
+				kPrintf("Success\n");
+			}
+			else
+			{
+				kPrintf("Fail\n");
+			}
 		}
 		else
 		{
-			kPrintf("Fail\n");
+			kPrintf("Task does not exist or task is system task\n");
 		}
 	}
 	else
 	{
-		for(i = 2; i < TASK_MAXCOUNT; i++)
+		for(i = 0; i < TASK_MAXCOUNT; i++)
 		{
 			pstTCB = kGetTCBInTCBPool(i);
 			qwID = pstTCB->stLink.qwID;
-			if((qwID >> 32) != 0)
+
+			if(((qwID >> 32) != 0) && ((pstTCB->qwFlags & TASK_FLAGS_SYSTEM) == 0x00))
 			{
 				kPrintf("Kill Task ID [0x%q] ", qwID);
 				if(kEndTask(qwID) == TRUE)
@@ -586,7 +597,7 @@ static void kPrintNumberTask(void)
 	while((kGetTickCount() - qwTickCount) < 50)
 	{
 		kSchedule();
-	}
+	}   
 
 	for(i = 0; i < 5; i++)
 	{
@@ -603,9 +614,8 @@ static void kPrintNumberTask(void)
 	while((kGetTickCount() - qwTickCount) < 1000)
 	{
 		kSchedule();
-	}
+	}   
 
-	kExitTask();
 }
 
 static void kTestMutex(const char * pcParameterBuffer)
@@ -618,8 +628,118 @@ static void kTestMutex(const char * pcParameterBuffer)
 
 	for(i = 0; i < 3; i++)
 	{
-		kCreateTask(TASK_FLAGS_LOW, (QWORD) kPrintNumberTask);
-	}
+		kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)kPrintNumberTask);
+	}   
 	kPrintf("Wait Util %d Task End...\n", i);
 	kGetCh();
+}
+
+static void kCreateThreadTask(void)
+{
+	int i;
+
+	for(i = 0; i < 3; i++)
+	{
+		kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD)kTestTask2);
+	}
+
+	while(1)
+	{
+		kSleep(1);
+	}
+}
+
+static void kTestThread(const char * pcParameterBuffer)
+{
+	TCB * pstProcess;
+
+	pstProcess = kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, (void *)0xEEEEEEEE, 0x1000, (QWORD)kCreateThreadTask);
+	if(pstProcess != NULL)
+	{
+		kPrintf("Process [0x%Q] Create Success\n", pstProcess->stLink.qwID); 
+	}
+	else
+	{
+		kPrintf("Process Create Fail\n");
+	}
+}
+
+static volatile QWORD gs_qwRandomValue = 0;
+
+QWORD kRandom(void)
+{
+	gs_qwRandomValue = (gs_qwRandomValue * 412153 + 5571031) >> 16;
+	return gs_qwRandomValue;
+}
+
+static void kDropCharacterThread(void)
+{
+	int iX, iY;
+	int i;
+	char vcText[2] = { 0, };
+
+	iX = kRandom() % CONSOLE_WIDTH;
+
+	while(1)
+	{
+		kSleep(kRandom() % 20);
+
+		if((kRandom() % 20) < 16)
+		{
+			vcText[0] = ' ';
+			for(i = 0; i < CONSOLE_HEIGHT - 1; i++)
+			{
+				kPrintStringXY(iX, i , vcText);
+				kSleep(50);
+			}
+		}
+		else
+		{
+			for(i = 0; i < CONSOLE_HEIGHT - 1; i++)
+			{
+				vcText[0] = i + kRandom();
+				kPrintStringXY(iX, i, vcText);
+				kSleep(50);
+			}
+		}
+	}
+}
+
+static void kMatrixProcess(void)
+{
+	int i;
+
+	for(i = 0; i < 300; i++)
+	{
+		if(kCreateTask(TASK_FLAGS_THREAD | TASK_FLAGS_LOW, 0, 0, (QWORD)kDropCharacterThread) == NULL)
+		{
+			break;
+		}
+
+		kSleep(kRandom() % 5 + 5);
+	}
+
+	kPrintf("%d Thread is created\n", i);
+
+	kGetCh();
+}
+
+static void kShowMatrix(const char * pcParameterBuffer)
+{
+	TCB * pstProcess;
+
+	pstProcess = kCreateTask(TASK_FLAGS_PROCESS | TASK_FLAGS_LOW, (void *)0xE00000, 0xE00000, (QWORD)kMatrixProcess);
+	if(pstProcess != NULL)
+	{
+		kPrintf("Matrix Process [0x%Q] Create Success\n");
+
+		while((pstProcess->stLink.qwID >> 32) != 0)
+		{
+			kSleep(100);
+		}
+	}
+	else
+	{
+		kPrintf("Matrix Process Create Fail\n");
+	}
 }
