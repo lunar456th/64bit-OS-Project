@@ -1,14 +1,13 @@
 #ifndef __ISR_H__
 #define __ISR_H__
 
-// 예외 처리용 ISR
 void kISRDivideError(void);
 void kISRDebug(void);
 void kISRNMI(void);
 void kISRBreakPoint(void);
 void kISROverflow(void);
 void kISRBoundRangeExceeded(void);
-void kISRInvalidOpcode(void);
+void kISRInvalidOpcode();
 void kISRDeviceNotAvailable(void);
 void kISRDoubleFault(void);
 void kISRCoprocessorSegmentOverrun(void);
@@ -42,5 +41,4 @@ void kISRHDD1(void);
 void kISRHDD2(void);
 void kISRETCInterrupt(void);
 
-
-#endif /*__ISR_H__*/
+#endif

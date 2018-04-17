@@ -4,9 +4,9 @@
 #include "Types.h"
 
 #define CONSOLESHELL_MAXCOMMANDBUFFERCOUNT  300
-#define CONSOLESHELL_PROMPTMESSAGE		"MINT64>"
+#define CONSOLESHELL_PROMPTMESSAGE		  "MINT64>"
 
-typedef void (*CommandFunction) (const char * pcParameter);
+typedef void (* CommandFunction) (const char * pcParameter);
 
 #pragma pack(push, 1)
 
@@ -15,14 +15,14 @@ typedef struct kShellCommandEntryStruct
 	char * pcCommand;
 	char * pcHelp;
 	CommandFunction pfFunction;
-}SHELLCOMMANDENTRY;
+} SHELLCOMMANDENTRY;
 
 typedef struct kParameterListStruct
 {
 	const char * pcBuffer;
 	int iLength;
 	int iCurrentPosition;
-}PARAMETERLIST;
+} PARAMETERLIST;
 
 #pragma pack(pop)
 
@@ -50,5 +50,5 @@ static void kTestMutex(const char * pcParameterBuffer);
 static void kCreateThreadTask(void);
 static void kTestThread(const char * pcParameterBuffer);
 static void kShowMatrix(const char * pcParameterBuffer);
-
-#endif 
+static void kTestPIE(const char * pcParameterBuffer);
+#endif

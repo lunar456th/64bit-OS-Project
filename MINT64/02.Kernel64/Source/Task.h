@@ -4,71 +4,73 @@
 #include "Types.h"
 #include "List.h"
 
-#define TASK_REGISTERCOUNT			(5 + 19)
-#define TASK_REGISTERSIZE			8
+#define TASK_REGISTERCOUNT	 (5 + 19)
+#define TASK_REGISTERSIZE	   8
 
-#define TASK_GSOFFSET				0
-#define TASK_FSOFFSET				1
-#define TASK_ESOFFSET				2
-#define TASK_DSOFFSET				3
-#define TASK_R15OFFSET				4
-#define TASK_R14OFFSET				5
-#define TASK_R13OFFSET				6
-#define TASK_R12OFFSET				7
-#define TASK_R11OFFSET				8
-#define TASK_R10OFFSET				9
-#define TASK_R9OFFSET				10
-#define TASK_R8OFFSET				11
-#define TASK_RSIOFFSET				12
-#define TASK_RDIOFFSET				13
-#define TASK_RDXOFFSET				14
-#define TASK_RCXOFFSET				15
-#define TASK_RBXOFFSET				16
-#define TASK_RAXOFFSET				17
-#define TASK_RBPOFFSET				18
-#define TASK_RIPOFFSET				19
-#define TASK_CSOFFSET				20
-#define TASK_RFLAGSOFFSET			21
-#define TASK_RSPOFFSET				22
-#define TASK_SSOFFSET				23
+#define TASK_GSOFFSET		   0
+#define TASK_FSOFFSET		   1
+#define TASK_ESOFFSET		   2
+#define TASK_DSOFFSET		   3
+#define TASK_R15OFFSET		  4
+#define TASK_R14OFFSET		  5
+#define TASK_R13OFFSET		  6
+#define TASK_R12OFFSET		  7
+#define TASK_R11OFFSET		  8
+#define TASK_R10OFFSET		  9
+#define TASK_R9OFFSET		   10
+#define TASK_R8OFFSET		   11
+#define TASK_RSIOFFSET		  12
+#define TASK_RDIOFFSET		  13
+#define TASK_RDXOFFSET		  14
+#define TASK_RCXOFFSET		  15
+#define TASK_RBXOFFSET		  16
+#define TASK_RAXOFFSET		  17
+#define TASK_RBPOFFSET		  18
+#define TASK_RIPOFFSET		  19
+#define TASK_CSOFFSET		   20
+#define TASK_RFLAGSOFFSET	   21
+#define TASK_RSPOFFSET		  22
+#define TASK_SSOFFSET		   23
 
-#define TASK_TCBPOOLADDRESS			0x800000
-#define TASK_MAXCOUNT				1024
+#define TASK_TCBPOOLADDRESS	 0x800000
+#define TASK_MAXCOUNT		   1024
 
-#define TASK_STACKPOOLADDRESS		(TASK_TCBPOOLADDRESS + sizeof(TCB) * TASK_MAXCOUNT)
-#define TASK_STACKSIZE				8192
+#define TASK_STACKPOOLADDRESS   (TASK_TCBPOOLADDRESS + sizeof(TCB) * TASK_MAXCOUNT)
+#define TASK_STACKSIZE		  8192
 
-#define TASK_INVALIDID				0xFFFFFFFFFFFFFFFF
+#define TASK_INVALIDID		  0xFFFFFFFFFFFFFFFF
 
-#define TASK_PROCESSORTIME			5
+#define TASK_PROCESSORTIME	  5
 
-#define TASK_MAXREADYLISTCOUNT		5
+#define TASK_MAXREADYLISTCOUNT  5
 
 #define TASK_FLAGS_HIGHEST			0
-#define TASK_FLAGS_HIGH				1
-#define TASK_FLAGS_MEDIUM			2
+#define TASK_FLAGS_HIGH			   1
+#define TASK_FLAGS_MEDIUM			 2
 #define TASK_FLAGS_LOW				3
-#define TASK_FLAGS_LOWEST			4
-#define TASK_FLAGS_WAIT				0xFF
+#define TASK_FLAGS_LOWEST			 4
+#define TASK_FLAGS_WAIT			   0xFF
 
 #define TASK_FLAGS_ENDTASK			0x8000000000000000
-#define TASK_FLAGS_SYSTEM			0x4000000000000000
+#define TASK_FLAGS_SYSTEM			 0x4000000000000000
 #define TASK_FLAGS_PROCESS			0x2000000000000000
-#define TASK_FLAGS_THREAD			0x1000000000000000
-#define TASK_FLAGS_IDLE				0x0800000000000000
+#define TASK_FLAGS_THREAD			 0x1000000000000000
+#define TASK_FLAGS_IDLE			   0x0800000000000000
 
-#define GETPRIORITY(x)				((x) & 0xFF)
-#define SETPRIORITY(x, priority)	((x) = ((x) & 0xFFFFFFFFFFFFFF00) | (priority))
-#define GETTCBOFFSET(x)				((x) & 0xFFFFFFFF)
+#define GETPRIORITY(x)		((x) & 0xFF)
+#define SETPRIORITY(x, priority)  ((x) = ((x) & 0xFFFFFFFFFFFFFF00) | \
+		(priority))
+#define GETTCBOFFSET(x)	   ((x) & 0xFFFFFFFF)
 
-#define GETTCBFROMTHREADLINK(x)		(TCB *)((QWORD)(x) - offsetof(TCB, stThreadLink))
+#define GETTCBFROMTHREADLINK(x)   (TCB *)((QWORD)(x) - offsetof(TCB, \
+									  stThreadLink))
 
 #pragma pack(push, 1)
 
 typedef struct kContextStruct
 {
 	QWORD vqRegister[TASK_REGISTERCOUNT];
-}CONTEXT;
+} CONTEXT;
 
 typedef struct kTaskControlBlockStruct
 {
@@ -81,15 +83,21 @@ typedef struct kTaskControlBlockStruct
 
 	LISTLINK stThreadLink;
 
-	LIST stChildThreadList;
-
 	QWORD qwParentProcessID;
+
+	QWORD vqwFPUContext[512 / 8];
+
+	LIST stChildThreadList;
 
 	CONTEXT stContext;
 
 	void * pvStackAddress;
 	QWORD qwStackSize;
-}TCB;
+
+	BOOL bFPUUsed;
+
+	char vcPadding[11];
+} TCB;
 
 typedef struct kTCBPoolManagerStruct
 {
@@ -98,7 +106,7 @@ typedef struct kTCBPoolManagerStruct
 	int iUseCount;
 
 	int iAllocatedCount;
-}TCBPOOLMANAGER;
+} TCBPOOLMANAGER;
 
 typedef struct kSchedulerStruct
 {
@@ -115,7 +123,9 @@ typedef struct kSchedulerStruct
 	QWORD qwProcessorLoad;
 
 	QWORD qwSpendProcessorTimeInIdleTask;
-}SCHEDULER;
+
+	QWORD qwLastFPUUsedTaskID;
+} SCHEDULER;
 
 #pragma pack(pop)
 
@@ -148,4 +158,7 @@ static TCB * kGetProcessByThread(TCB * pstThread);
 void kIdleTask(void);
 void kHaltProcessorByLoad(void);
 
-#endif 
+QWORD kGetLastFPUUsedTaskID(void);
+void kSetLastFPUUsedTaskID(QWORD qwTaskID);
+
+#endif

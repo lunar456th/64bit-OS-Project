@@ -36,7 +36,7 @@ int kMemCmp(const void * pvDestination, const void * pvSource, int iSize)
 		cTemp = ((char *)pvDestination)[i] - ((char *)pvSource)[i];
 		if(cTemp != 0)
 		{
-			return (int)cTemp;
+			return (int) cTemp;
 		}
 	}
 	return 0;
@@ -67,7 +67,7 @@ int kStrLen(const char * pcBuffer)
 {
 	int i;
 
-	for(i = 0;; i++)
+	for(i = 0; ; i++)
 	{
 		if(pcBuffer[i] == '\0')
 		{
@@ -77,7 +77,7 @@ int kStrLen(const char * pcBuffer)
 	return i;
 }
 
-static int gs_qwTotalRAMMBSize = 0;
+static gs_qwTotalRAMMBSize = 0;
 
 void kCheckTotalRAMSize(void)
 {
@@ -88,16 +88,16 @@ void kCheckTotalRAMSize(void)
 	while(1)
 	{
 		dwPreviousValue = * pdwCurrentAddress;
-		 * pdwCurrentAddress = 0x12345678;
-		if(*pdwCurrentAddress != 0x12345678)
+		* pdwCurrentAddress = 0x12345678;
+		if(* pdwCurrentAddress != 0x12345678)
 		{
 			break;
 		}
-		 * pdwCurrentAddress = dwPreviousValue;
+		* pdwCurrentAddress = dwPreviousValue;
 		pdwCurrentAddress += (0x400000 / 4);
 	}
 	gs_qwTotalRAMMBSize = (QWORD)pdwCurrentAddress / 0x100000;
-}  
+}
 
 QWORD kGetTotalRAMSize(void)
 {
@@ -138,7 +138,7 @@ QWORD kHexStringToQword(const char * pcBuffer)
 		{
 			qwValue += (pcBuffer[i] - 'a') + 10;
 		}
-		else 
+		else
 		{
 			qwValue += pcBuffer[i] - '0';
 		}
@@ -270,14 +270,13 @@ void kReverseString(char * pcBuffer)
    int iLength;
    int i;
    char cTemp;
-   
-   
+
    iLength = kStrLen(pcBuffer);
    for(i = 0; i < iLength / 2; i++)
    {
-	cTemp = pcBuffer[i];
-	pcBuffer[i] = pcBuffer[iLength - 1 - i];
-	pcBuffer[iLength - 1 - i] = cTemp;
+	   cTemp = pcBuffer[i];
+	   pcBuffer[i] = pcBuffer[iLength - 1 - i];
+	   pcBuffer[iLength - 1 - i] = cTemp;
    }
 }
 
@@ -295,20 +294,21 @@ int kSPrintf(char * pcBuffer, const char * pcFormatString, ...)
 
 int kVSPrintf(char * pcBuffer, const char * pcFormatString, va_list ap)
 {
-	QWORD i, j;
+	QWORD i, j, k;
 	int iBufferIndex = 0;
 	int iFormatLength, iCopyLength;
 	char * pcCopyString;
 	QWORD qwValue;
 	int iValue;
+	double dValue;
 
 	iFormatLength = kStrLen(pcFormatString);
-	for(i = 0; i < iFormatLength; i++) 
+	for(i = 0; i < iFormatLength; i++)
 	{
-		if(pcFormatString[i] == '%') 
+		if(pcFormatString[i] == '%')
 		{
 			i++;
-			switch(pcFormatString[i]) 
+			switch(pcFormatString[i])
 			{
 			case 's':
 				pcCopyString = (char *)(va_arg(ap, char *));
@@ -318,13 +318,13 @@ int kVSPrintf(char * pcBuffer, const char * pcFormatString, va_list ap)
 				break;
 
 			case 'c':
-				pcBuffer[iBufferIndex] = (char)(va_arg(ap, int));
+				pcBuffer[iBufferIndex] = (char) (va_arg(ap, int));
 				iBufferIndex++;
 				break;
 
 			case 'd':
 			case 'i':
-				iValue = (int)(va_arg(ap, int));
+				iValue = (int) (va_arg(ap, int));
 				iBufferIndex += kIToA(iValue, pcBuffer + iBufferIndex, 10);
 				break;
 
@@ -339,6 +339,26 @@ int kVSPrintf(char * pcBuffer, const char * pcFormatString, va_list ap)
 			case 'p':
 				qwValue = (QWORD)(va_arg(ap, QWORD));
 				iBufferIndex += kIToA(qwValue, pcBuffer + iBufferIndex, 16);
+				break;
+
+			case 'f':
+				dValue = (double) (va_arg(ap, double));
+				dValue += 0.005;
+				pcBuffer[iBufferIndex] = '0' + (QWORD)(dValue * 100) % 10;
+				pcBuffer[iBufferIndex + 1] = '0' + (QWORD)(dValue * 10) % 10;
+				pcBuffer[iBufferIndex + 2] = '.';
+				for(k = 0; ; k++)
+				{
+					if(((QWORD)dValue == 0) && (k != 0))
+					{
+						break;
+					}
+					pcBuffer[iBufferIndex + 3 + k] = '0' + ((QWORD)dValue % 10);
+					dValue = dValue / 10;
+				}
+				pcBuffer[iBufferIndex + 3 + k] = '\0';
+				kReverseString(pcBuffer + iBufferIndex);
+				iBufferIndex += 3 + k;
 				break;
 
 			default:

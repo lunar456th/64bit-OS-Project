@@ -1,9 +1,5 @@
 #include "Task.h"
 #include "Descriptor.h"
-#include "Utility.h"
-#include "AssemblyUtility.h"
-#include "Console.h"
-#include "Synchronization.h"
 
 static SCHEDULER gs_stScheduler;
 static TCBPOOLMANAGER gs_stTCBPoolManager;
@@ -114,6 +110,8 @@ TCB * kCreateTask(QWORD qwFlags, void * pvMemoryAddress, QWORD qwMemorySize, QWO
 
 	kInitializeList(&(pstTask->stChildThreadList));
 
+	pstTask->bFPUUsed = FALSE;
+
 	bPreviousFlag = kLockForSystemData();
 
 	kAddTaskToReadyList(pstTask);
@@ -127,12 +125,10 @@ static void kSetUpTask(TCB * pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress, v
 {
 	kMemSet(pstTCB->stContext.vqRegister, 0, sizeof(pstTCB->stContext.vqRegister));
 
-	pstTCB->stContext.vqRegister[TASK_RSPOFFSET] = (QWORD)pvStackAddress + 
-			qwStackSize - 8;
-	pstTCB->stContext.vqRegister[TASK_RBPOFFSET] = (QWORD)pvStackAddress + 
-			qwStackSize - 8;
+	pstTCB->stContext.vqRegister[TASK_RSPOFFSET] = (QWORD)pvStackAddress + qwStackSize - 8;
+	pstTCB->stContext.vqRegister[TASK_RBPOFFSET] = (QWORD)pvStackAddress + qwStackSize - 8;
 
-	 * (QWORD *)((QWORD)pvStackAddress + qwStackSize - 8) = (QWORD)kExitTask;
+	* (QWORD *)((QWORD)pvStackAddress + qwStackSize - 8) = (QWORD)kExitTask;
 
 	pstTCB->stContext.vqRegister[TASK_CSOFFSET] = GDT_KERNELCODESEGMENT;
 	pstTCB->stContext.vqRegister[TASK_DSOFFSET] = GDT_KERNELDATASEGMENT;
@@ -161,7 +157,7 @@ void kInitializeScheduler(void)
 	{
 		kInitializeList(&(gs_stScheduler.vstReadyList[i]));
 		gs_stScheduler.viExecuteCount[i] = 0;
-	}   
+	}
 	kInitializeList(&(gs_stScheduler.stWaitList));
 
 	pstTask = kAllocateTCB();
@@ -175,6 +171,8 @@ void kInitializeScheduler(void)
 
 	gs_stScheduler.qwSpendProcessorTimeInIdleTask = 0;
 	gs_stScheduler.qwProcessorLoad = 0;
+
+	gs_stScheduler.qwLastFPUUsedTaskID = TASK_INVALIDID;
 }
 
 void kSetRunningTask(TCB * pstTask)
@@ -230,7 +228,7 @@ static TCB * kGetNextTaskToRun(void)
 		{
 			break;
 		}
-	}   
+	}
 	return pstTarget;
 }
 
@@ -258,7 +256,7 @@ static TCB * kRemoveTaskFromReadyList(QWORD qwTaskID)
 	TCB * pstTarget;
 	BYTE bPriority;
 
-	if(GETTCBOFFSET(qwTaskID) >= TASK_MAXCOUNT)
+	if(GETTCBOFFSET(qwTaskID)>= TASK_MAXCOUNT)
 	{
 		return NULL;
 	}
@@ -273,7 +271,7 @@ static TCB * kRemoveTaskFromReadyList(QWORD qwTaskID)
 	if(bPriority >= TASK_MAXREADYLISTCOUNT)
 	{
 		return NULL;
-	}   
+	}
 
 	pstTarget = kRemoveList(&(gs_stScheduler.vstReadyList[bPriority]), qwTaskID);
 	return pstTarget;
@@ -336,13 +334,21 @@ void kSchedule(void)
 		return;
 	}
 
-	pstRunningTask = gs_stScheduler.pstRunningTask; 
+	pstRunningTask = gs_stScheduler.pstRunningTask;
 	gs_stScheduler.pstRunningTask = pstNextTask;
 
-	if((pstRunningTask->qwFlags & TASK_FLAGS_IDLE) == TASK_FLAGS_IDLE)
+	if((pstRunningTask->qwFlags & TASK_FLAGS_IDLE)== TASK_FLAGS_IDLE)
 	{
-		gs_stScheduler.qwSpendProcessorTimeInIdleTask += 
-			TASK_PROCESSORTIME - gs_stScheduler.iProcessorTime;
+		gs_stScheduler.qwSpendProcessorTimeInIdleTask += TASK_PROCESSORTIME - gs_stScheduler.iProcessorTime;
+	}
+
+	if(gs_stScheduler.qwLastFPUUsedTaskID != pstNextTask->stLink.qwID)
+	{
+		kSetTS();
+	}
+	else
+	{
+		kClearTS();
 	}
 
 	if(pstRunningTask->qwFlags & TASK_FLAGS_ENDTASK)
@@ -381,10 +387,10 @@ BOOL kScheduleInInterrupt(void)
 	pstRunningTask = gs_stScheduler.pstRunningTask;
 	gs_stScheduler.pstRunningTask = pstNextTask;
 
-	if((pstRunningTask->qwFlags & TASK_FLAGS_IDLE) == TASK_FLAGS_IDLE)
+	if((pstRunningTask->qwFlags & TASK_FLAGS_IDLE)== TASK_FLAGS_IDLE)
 	{
 		gs_stScheduler.qwSpendProcessorTimeInIdleTask += TASK_PROCESSORTIME;
-	}   
+	}
 
 	if(pstRunningTask->qwFlags & TASK_FLAGS_ENDTASK)
 	{
@@ -396,6 +402,15 @@ BOOL kScheduleInInterrupt(void)
 		kAddTaskToReadyList(pstRunningTask);
 	}
 	kUnlockForSystemData(bPreviousFlag);
+
+	if(gs_stScheduler.qwLastFPUUsedTaskID != pstNextTask->stLink.qwID)
+	{
+		kSetTS();
+	}
+	else
+	{
+		kClearTS();
+	}
 
 	kMemCpy(pcContextAddress, &(pstNextTask->stContext), sizeof(CONTEXT));
 
@@ -485,7 +500,6 @@ int kGetReadyTaskCount(void)
 	return iTotalCount;
 }
 
- 
 int kGetTaskCount(void)
 {
 	int iTotalCount;
@@ -571,7 +585,7 @@ void kIdleTask(void)
 		}
 		else
 		{
-			gs_stScheduler.qwProcessorLoad = 100 - (qwCurrentSpendTickInIdleTask - qwLastSpendTickInIdleTask) * 100 / (qwCurrentMeasureTickCount - qwLastMeasureTickCount);
+			gs_stScheduler.qwProcessorLoad = 100 - (qwCurrentSpendTickInIdleTask - qwLastSpendTickInIdleTask) * 100 /(qwCurrentMeasureTickCount - qwLastMeasureTickCount);
 		}
 
 		qwLastMeasureTickCount = qwCurrentMeasureTickCount;
@@ -660,3 +674,14 @@ void kHaltProcessorByLoad(void)
 		kHlt();
 	}
 }
+
+QWORD kGetLastFPUUsedTaskID(void)
+{
+	return gs_stScheduler.qwLastFPUUsedTaskID;
+}
+
+void kSetLastFPUUsedTaskID(QWORD qwTaskID)
+{
+	gs_stScheduler.qwLastFPUUsedTaskID = qwTaskID;
+}
+

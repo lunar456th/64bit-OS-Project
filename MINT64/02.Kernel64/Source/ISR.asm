@@ -3,21 +3,20 @@
 SECTION .text
 
 extern kCommonExceptionHandler, kCommonInterruptHandler, kKeyboardHandler
-extern kTimerHandler
+extern kTimerHandler, kDeviceNotAvailableHandler
 
-; 예외 ISR
 global kISRDivideError, kISRDebug, kISRNMI, kISRBreakPoint, kISROverflow
 global kISRBoundRangeExceeded, kISRInvalidOpcode, kISRDeviceNotAvailable, kISRDoubleFault
 global kISRCoprocessorSegmentOverrun, kISRInvalidTSS, kISRSegmentNotPresent
 global kISRStackSegmentFault, kISRGeneralProtection, kISRPageFault, kISR15
 global kISRFPUError, kISRAlignmentCheck, kISRMachineCheck, kISRSIMDError, kISRETCException
 
-; 인터럽트 ISR
 global kISRTimer, kISRKeyboard, kISRSlavePIC, kISRSerial2, kISRSerial1, kISRParallel2
 global kISRFloppy, kISRParallel1, kISRRTC, kISRReserved, kISRNotUsed1, kISRNotUsed2
 global kISRMouse, kISRCoprocessor, kISRHDD1, kISRHDD2, kISRETCInterrupt
 
-%macro KSAVECONTEXT 0 ; 컨텍스트 저장 과정
+%macro KSAVECONTEXT 0
+
 	push rbp
 	mov rbp, rsp
 	push rax
@@ -45,11 +44,12 @@ global kISRMouse, kISRCoprocessor, kISRHDD1, kISRHDD2, kISRETCInterrupt
 	mov ax, 0x10
 	mov ds, ax
 	mov es, ax
-	mov gs, ax
-	mov fs, ax
+   	mov gs, ax
+   	mov fs, ax
 %endmacro
 
-%macro KLOADCONTEXT 0 ; 컨텍스트 복원 과정
+%macro KLOADCONTEXT 0
+
 	pop gs
 	pop fs
 	pop rax
@@ -74,13 +74,10 @@ global kISRMouse, kISRCoprocessor, kISRHDD1, kISRHDD2, kISRETCInterrupt
 	pop rbp
 %endmacro
 
-
-; 예외 핸들러
-
 kISRDivideError:
 	KSAVECONTEXT
 
-	mov rdi, 0 ; 예외 번호 삽입 후 핸들러 호출
+	mov rdi, 0
 	call kCommonExceptionHandler
 
 	KLOADCONTEXT
@@ -144,7 +141,7 @@ kISRDeviceNotAvailable:
 	KSAVECONTEXT
 
 	mov rdi, 7
-	call kCommonExceptionHandler
+	call kDeviceNotAvailableHandler
 
 	KLOADCONTEXT
 	iretq
@@ -188,7 +185,7 @@ kISRSegmentNotPresent:
 	call kCommonExceptionHandler
 
 	KLOADCONTEXT
-    add rsp, 8
+	add rsp, 8
 	iretq
 
 kISRStackSegmentFault:
@@ -280,9 +277,6 @@ kISRETCException:
 	KLOADCONTEXT
 	iretq
 
-
-; 인터럽트 핸들러
-
 kISRTimer:
 	KSAVECONTEXT
 
@@ -296,7 +290,7 @@ kISRKeyboard:
 	KSAVECONTEXT
 
 	mov rdi, 33
-    call kKeyboardHandler
+	call kKeyboardHandler
 
 	KLOADCONTEXT
 	iretq
@@ -435,4 +429,3 @@ kISRETCInterrupt:
 
 	KLOADCONTEXT
 	iretq
-
